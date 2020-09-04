@@ -17,3 +17,15 @@
     background-color: brown;
     border : 0px;
 }
+.matching_start{
+    font-size : 30px;
+    font-family: 'Jalnan';
+    color : white;
+    margin-bottom: 3vh;
+}
+.matching_start_main{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

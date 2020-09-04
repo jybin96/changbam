@@ -5,11 +5,11 @@ import MenuIcon from "@material-ui/icons/Menu";
 import ChatBubbleOutlineIcon from "@material-ui/icons/ChatBubbleOutline";
 import Start from "../../Utils/Start/Start.js";
 
-export default class LandingPage extends Component {
+export default class LandingPage2 extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      userid:'jybin96',
+      userid: 'snsk3779',
       count: 1,
       toggle: false,
       admin: false,

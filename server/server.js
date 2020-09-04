@@ -6,11 +6,15 @@ const bodyparser = require("body-parser");
 const mysql = require("mysql");
 // nodemailer 모듈 요청
 const nodemailer = require("nodemailer");
+var http = require('http').createServer(app);
+const io = require('socket.io')(http);
+
+
 //mysql연결
 var connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "root",
+  password: "snsk3779@",
   database: "chang_man",
 });
 
@@ -19,6 +23,91 @@ connection.connect();
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(cors());
 app.use(bodyparser.json());
+
+
+
+
+io.on('connection',function(socket){
+  console.log("소켓 접속 성공");
+  socket.on('messagerow',(userid)=>{
+    socket.join(userid); //따로 디비 만들어 주어야한다.
+  })
+  socket.on('message',(messageobject)=>{
+    console.log(messageobject);
+    io.emit('send message',messageobject)
+  })
+  socket.on('new message',(messageobject)=>{
+    console.log("asdasdasda");
+    
+    io.to(messageobject.userid).emit('my messagerow',messageobject); //사용자에게 주고
+    io.to(messageobject.touser).emit('touser messagerow',messageobject); //보내는 사람에게 주고
+  })
+  socket.on('random matching',userid=>{
+
+    connection.query('select * from user_info where user_id = ? ',[userid],function(err,rows,field){
+      if(rows[0].user_sex === 'm'){
+        connection.query('select * from user_info where user_sex = ? ',['w'],function(err,rows2,field){
+
+          if(rows2[0] === undefined){
+            console.log();
+            socket.emit('fail matching');
+          }else if(rows2[0].user_sex === 'w'){
+            socket.emit('matching success',rows2[0]);
+          }else{
+            socket.emit('fail matching');
+          }
+          
+        })
+      }else{
+
+      }
+    })
+  })
+})
+
+
+app.post("/message",(req,res)=>{
+  console.log(req.body);
+  const roomname = "room1" //여기서 룸정하기
+  connection.query("insert into message_table (message_room,message_user,message_touser,message_body) values (?,?,?,?)"
+  ,[roomname,req.body.userid,req.body.touser,req.body.body],function(err,rows,field){
+    console.log("메세지 넣기 성공");
+    res.send();
+  })
+})
+app.post("/messageroomboolean",(req,res)=>{
+  console.log("server.js 57"+" "+req.body.rowidex);
+  const index = req.body.rowidex // 바꾸고자하는 인덱스위치
+  connection.query("select * from  message_table where message_time in (select max(message_time) from message_table group by message_room) and (message_user = ? or message_touser = ?);"
+  ,[req.body.userid,req.body.userid],function(err,rows,field){
+    console.log("카차차차차차차이이이이"+rows[req.body.rowidex].message_key);
+    const room = rows[req.body.rowidex];
+    res.send(room);
+    
+  })
+})
+
+app.post("/messageshow",(req,res)=>{
+  console.log(req.body);
+  connection.query("select * from message_table where message_user = ? or message_touser = ? order by message_time"
+  ,[req.body.userid,req.body.userid],function(err,rows,field){
+    res.send(rows);
+  })
+})
+
+app.post("/messagerow",(req,res)=>{
+  console.log(req.body);
+  connection.query("select * from  message_table where message_time in (select max(message_time) from message_table group by message_room) and (message_user = ? or message_touser = ?);"
+  ,[req.body.userid,req.body.userid],function(err,rows,field){
+    console.log(rows);
+    res.send(rows);
+  })
+})
+
+
+
+
+
 
 //3001/Signup 포트로 보내기
 app.post("/Signup", (req, res) => {
@@ -140,9 +229,7 @@ app.post("/Sendmail", (req, res) => {
   );
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
-});
+http.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 var mailSender = {
   // 메일발송 함수
